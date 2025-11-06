@@ -1,6 +1,11 @@
 const express = require('express');
 const app = express();
+const path = require('path');
+const hbs = require('hbs');
 const PORT = process.env.PORT || 3000;
+
+app.set('view engine', 'hbs');
+app.set('views', path.join(__dirname, 'views'));
 
 // Middleware
 app.use(express.json());
@@ -18,6 +23,8 @@ app.get('/', (req, res) => {
         message: 'Hello from the API!',
         timestamp: new Date().toISOString()
     });
+
+    res.render('home', {user: user});
 });
 
 app.get('/health', (req, res) => {
@@ -25,6 +32,17 @@ app.get('/health', (req, res) => {
         status: 'healthy',
         service: 'nodejs-backend'
     });
+});
+
+app.get('/change', (req, res) =>{
+    res.render('changePage');
+});
+
+app.post('/setname', (req, res) => {
+    const name = (req.body && req.body.name) ? req.body.name : '';
+    console.log('User entered name:', name);
+
+    res.redirect('/');
 });
 
 // Start server
