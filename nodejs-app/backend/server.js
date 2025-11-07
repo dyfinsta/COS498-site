@@ -1,4 +1,5 @@
 const express = require('express');
+const session = require('express-session');
 const hbs = require('hbs');
 const path = require('path');
 const app = express();
@@ -15,6 +16,17 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Register partials directory
 hbs.registerPartials(path.join(__dirname, 'views', 'partials'));
+
+// Session middleware configuration - Add this block
+app.use(session({
+    secret: 'your-secret-key-change-this-in-production',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: false, // Set to true if using HTTPS
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+}));
 
 // API Routes
 // Note: We don't include '/api' in our routes because nginx strips it when forwarding

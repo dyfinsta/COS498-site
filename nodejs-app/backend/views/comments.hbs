@@ -2,17 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{{title}}</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   {{> nav}}
-
   <main>
-    <h1>Welcome to The Forum</h1>
-  </main>
+    <h2>Comment Feed</h2>
+    {{#if user}}
+      <p><a href="/comment/new">Write a new comment</a></p>
+    {{else}}
+      <p><a href="/login">Login</a> to post a comment.</p>
+    {{/if}}
 
+    {{#each comments}}
+      <div class="comment">
+        <p><strong>{{author}}</strong> wrote:</p>
+        <p>{{text}}</p>
+        <small>{{createdAt}}</small>
+      </div>
+      <hr>
+    {{else}}
+      <p>No comments yet. Be the first!</p>
+    {{/each}}
+  </main>
   {{> footer}}
 </body>
 </html>

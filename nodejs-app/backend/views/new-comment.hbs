@@ -2,17 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{{title}}</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   {{> nav}}
-
   <main>
-    <h1>Welcome to The Forum</h1>
+    <h2>New Comment</h2>
+    <form action="/comment" method="POST">
+      <textarea name="text" rows="4" cols="50" placeholder="Write your comment..." required></textarea><br>
+      <button type="submit">Post Comment</button>
+    </form>
   </main>
-
   {{> footer}}
 </body>
 </html>
