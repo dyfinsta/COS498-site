@@ -7,6 +7,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Set up Handlebars
 app.set('view engine', 'hbs');
@@ -20,6 +21,7 @@ hbs.registerPartials(path.join(__dirname, 'views', 'partials'));
 // nginx receives: http://localhost/api/users
 // nginx forwards to: http://backend-nodejs:3000/users (without /api)
 app.get('/', (req, res) => {
+  console.log("Trying rto render hmoe");
     res.render('home',{
       title: 'The Forum'
     })
