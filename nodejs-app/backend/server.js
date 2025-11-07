@@ -76,13 +76,19 @@ app.post('/login', (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res.redirect('/login?error=1');
+      console.log('Login failed: Missing fields');
+      return res.redirect('/login?error=missing');
     }
 
-    const user = users.find(u => u.username === username && u.password === password);
+    const user = users.find(u => u.username === username);
     if (!user) {
-      console.log('⚠️ Login failed: Invalid credentials');
-      return res.redirect('/login?error=1');
+      console.log('Login failed: User not found');
+      return res.redirect('/login?error=no_user');
+    }
+
+    if (user.password !== password) {
+      console.log('Login failed: Incorrect password');
+      return res.redirect('/login?error=wrong_password');
     }
 
     req.session.regenerate((err) => {
@@ -116,17 +122,17 @@ app.post('/register', (req, res) => {
   const { username, password, confirm } = req.body;
 
   if (!username || !password || !confirm) {
-    console.log('⚠️ Registration failed: Missing fields');
+    console.log('Registration failed: Missing fields');
     return res.redirect('/register?error=missing');
   }
 
   if (password !== confirm) {
-    console.log('⚠️ Registration failed: Passwords do not match');
+    console.log('Registration failed: Passwords do not match');
     return res.redirect('/register?error=mismatch');
   }
 
   if (users.find(user => user.username === username)) {
-    console.log('⚠️ Registration failed: Username already taken');
+    console.log('Registration failed: Username already taken');
     return res.redirect('/register?error=taken');
   }
 

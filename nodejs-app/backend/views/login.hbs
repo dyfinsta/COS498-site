@@ -9,7 +9,17 @@
   {{> nav}}
   <main>
     <h2>Login</h2>
-    {{#if error}}<p class="error">{{error}}</p>{{/if}}
+    {{#if error}}
+      <p class="error">
+        {{#if (eq error "missing")}}
+          Please fill out all fields.
+        {{else if (eq error "no_user")}}
+          No account found with this username.
+        {{else if (eq error "wrong_password")}}
+          Incorrect password.
+        {{/if}}
+      </p>
+    {{/if}}
     <form action="/login" method="POST">
       <label>Username:</label><br>
       <input type="text" name="username" required><br>
