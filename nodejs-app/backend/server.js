@@ -1,52 +1,95 @@
 const express = require('express');
-const app = express();
 const path = require('path');
 const hbs = require('hbs');
+const cookieParser = require('cookie-parser');
+
+const app = express();
 const PORT = process.env.PORT || 3000;
+
+const users = [];
+const comments = [];
+
+app.use(express.urlencoded({extended: true}));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+function getUser(req) {
+  return req.cookies.user || null;
+}
 
-// Remove static file serving - nginx will handle this
-// app.use(express.static('public')); // Remove this line
-
-// API Routes
-// Note: We don't include '/api' in our routes because nginx strips it when forwarding
-// nginx receives: http://localhost/api/users
-// nginx forwards to: http://backend-nodejs:3000/users (without /api)
 app.get('/', (req, res) => {
-    res.json({ 
-        message: 'Hello from the API!',
-        timestamp: new Date().toISOString()
-    });
-
-    res.render('home', {user: user});
+  const user = getUser(req);
+  res.render('home', { user });
 });
 
-app.get('/health', (req, res) => {
-    res.json({ 
-        status: 'healthy',
-        service: 'nodejs-backend'
-    });
+// Register form
+app.get('/register', (req, res) => {
+  res.render('register');
 });
 
-app.get('/change', (req, res) =>{
-    res.render('changePage');
+// Handle registration
+app.post('/register', (req, res) => {
+  const { username, password } = req.body;
+  const existing = users.find((u) => u.username === username);
+
+  if (existing) {
+    return res.render('register', { error: 'Username already exists!' });
+  }
+
+  users.push({ username, password });
+  res.redirect('/login');
 });
 
-app.post('/setname', (req, res) => {
-    const name = (req.body && req.body.name) ? req.body.name : '';
-    console.log('User entered name:', name);
+// Login form
+app.get('/login', (req, res) => {
+  res.render('login');
+});
 
-    res.redirect('/');
+// Handle login
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  const user = users.find((u) => u.username === username && u.password === password);
+
+  if (!user) {
+    return res.render('login', { error: 'Invalid username or password!' });
+  }
+
+  //cookies
+  res.cookie('user', username, { httpOnly: false });
+  res.redirect('/comments');
+});
+
+// Logout
+app.post('/logout', (req, res) => {
+  res.clearCookie('user');
+  res.redirect('/');
+});
+
+// View comments
+app.get('/comments', (req, res) => {
+  const user = getUser(req);
+  res.render('comments', { comments, user });
+});
+
+// New comment form
+app.get('/comment/new', (req, res) => {
+  const user = getUser(req);
+  if (!user) return res.redirect('/login');
+  res.render('new-comment', { user });
+});
+
+// Submit new comment
+app.post('/comment', (req, res) => {
+  const user = getUser(req);
+  if (!user) return res.redirect('/login');
+
+  comments.push({ author: user, text: req.body.comment, createdAt: new Date() });
+  res.redirect('/comments');
 });
 
 // Start server
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
 
