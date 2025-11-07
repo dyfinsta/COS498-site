@@ -1,14 +1,17 @@
-<nav class="navbar">
-  <a href="/">Home</a> |
-  <a href="/comments">Comments</a> |
-  {{#if user}}
-    <span>Logged in as <strong>{{user}}</strong></span> |
-    <form action="/logout" method="POST" style="display:inline;">
-      <button type="submit">Logout</button>
-    </form>
-  {{else}}
-    <a href="/login">Login</a> |
-    <a href="/register">Register</a>
-  {{/if}}
-</nav>
-<hr>
+<header>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/comments">Comments</a>
+    {{#if user.isLoggedIn}}
+      <a href="/comment/new">New Comment</a>
+      <form action="/logout" method="POST" style="display:inline;">
+        <button type="submit">Logout</button>
+      </form>
+    {{else}}
+      <a href="/login">Login</a>
+      <a href="/register">Register</a>
+    {{/if}}
+  </nav>
+  <hr>
+</header>
+

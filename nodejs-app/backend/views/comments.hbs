@@ -9,7 +9,7 @@
   {{> nav}}
   <main>
     <h2>Comment Feed</h2>
-    {{#if user}}
+    {{#if user.isLoggedIn}}
       <p><a href="/comment/new">Write a new comment</a></p>
     {{else}}
       <p><a href="/login">Login</a> to post a comment.</p>
