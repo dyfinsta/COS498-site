@@ -12,7 +12,15 @@
     <h2>Register</h2>
 
     {{#if error}}
-      <p style="color:red;">Please fill out all fields and make sure passwords match.</p>
+      <p class="error">
+        {{#if (eq error "missing")}}
+          Please fill out all fields.
+        {{else if (eq error "mismatch")}}
+          Passwords do not match.
+        {{else if (eq error "taken")}}
+          Username is already taken.
+        {{/if}}
+      </p>
     {{/if}}
 
     <form method="POST" action="/register">

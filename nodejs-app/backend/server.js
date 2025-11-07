@@ -20,6 +20,11 @@ app.set('views', path.join(__dirname, 'views'));
 // Register partials directory
 hbs.registerPartials(path.join(__dirname, 'views', 'partials'));
 
+// Register handlebars helpers
+hbs.registerHelper('eq', function(a, b) {
+    return a === b;
+});
+
 // Session middleware configuration - Add this block
 app.use(session({
     secret: 'your-secret-key-change-this-in-production',
@@ -110,14 +115,19 @@ app.get('/register', (req, res) => {
 app.post('/register', (req, res) => {
   const { username, password, confirm } = req.body;
 
-  if (!username || !password || !confirm || password !== confirm) {
-    console.log('⚠️ Registration failed: Missing or mismatched fields');
-    return res.redirect('/register?error=1');
+  if (!username || !password || !confirm) {
+    console.log('⚠️ Registration failed: Missing fields');
+    return res.redirect('/register?error=missing');
+  }
+
+  if (password !== confirm) {
+    console.log('⚠️ Registration failed: Passwords do not match');
+    return res.redirect('/register?error=mismatch');
   }
 
   if (users.find(user => user.username === username)) {
     console.log('⚠️ Registration failed: Username already taken');
-    return res.redirect('/register?error=1');
+    return res.redirect('/register?error=taken');
   }
 
   users.push({ username, password });
