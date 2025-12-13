@@ -3,6 +3,9 @@ FROM node:lts
 # Set working directory
 WORKDIR /app
 
+# Create data directory for persistent storage
+RUN mkdir -p /app/data
+
 # Copy package files
 COPY package*.json ./
 

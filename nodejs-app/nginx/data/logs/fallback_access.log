@@ -229,3 +229,4 @@
 [10/Dec/2025:15:23:06 +0000] 400 - GET http bankofarmenia.net "/?rest_route=/wp/v2/users/" [Client 142.93.143.8] [Length 252] [Gzip -] "Mozilla/5.0 (l9scan/2.0.8343e2335323e21373e2736313; +https://leakix.net)" "-"
 [10/Dec/2025:15:31:16 +0000] 200 - GET http 167.71.253.48 "/" [Client 185.242.226.114] [Length 568] [Gzip 1.86] "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36" "-"
 [13/Dec/2025:16:27:18 +0000] 200 - GET http www.bankofarmenia.net "/" [Client 100.30.248.17] [Length 568] [Gzip 1.86] "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/109.0.5414.119 Safari/537.36" "-"
+[13/Dec/2025:18:00:36 +0000] 200 - GET http 167.71.253.48 "/" [Client 149.50.103.48] [Length 568] [Gzip 1.86] "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.85 Safari/537.36 Edg/90.0.818.46" "-"

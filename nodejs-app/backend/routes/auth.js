@@ -9,7 +9,9 @@ const { validatePassword, hashPassword, comparePassword } = require('../modules/
  * GET /register - Show registration form
  */
 router.get('/register', (req, res) => {
-  res.render('register');
+  const error = req.session.error;
+  req.session.error = null; // Clear the error after reading it
+  res.render('register', { error });
 });
 
 /**
@@ -21,20 +23,23 @@ router.post('/register', async (req, res) => {
     
     // Validate input
     if (!username || !password) {
-      return res.redirect('/register?error=' + encodeURIComponent('Username and password are required'));
+      req.session.error = 'Username and password are required';
+      return res.redirect('/register');
     }
     
     // Validate password requirements
     const validation = validatePassword(password);
     if (!validation.valid) {
       const errorsText = validation.errors.join(', ');
-      return res.redirect('/register?error=' + encodeURIComponent('Password does not meet requirements: ' + errorsText));
+      req.session.error = 'Password does not meet requirements: ' + errorsText;
+      return res.redirect('/register');
     }
     
     // Check if username already exists
     const existingUser = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
     if (existingUser) {
-      return res.redirect('/register?error=' + encodeURIComponent('Username already exists. Please choose a different username.'));
+      req.session.error = 'Username already exists. Please choose a different username.';
+      return res.redirect('/register');
     }
     
     // Hash the password before storing
@@ -49,7 +54,8 @@ router.post('/register', async (req, res) => {
     
   } catch (error) {
     console.error('Registration error:', error);
-    res.redirect('/error?message=' + encodeURIComponent('An internal server error occurred. Please try again later.') + '&back=/register');
+    req.session.error = 'An internal server error occurred. Please try again later.';
+    res.redirect('/register');
   }
 });
 
@@ -57,7 +63,9 @@ router.post('/register', async (req, res) => {
  * GET /login - Show login form
  */
 router.get('/login', (req, res) => {
-  res.render('login');
+  const error = req.session.error;
+  req.session.error = null; // Clear the error after reading it
+  res.render('login', { error });
 });
 
 /**
@@ -69,7 +77,8 @@ router.post('/login', async (req, res) => {
     
     // Validate input
     if (!username || !password) {
-      return res.redirect('/login?error=' + encodeURIComponent('Username and password are required'));
+      req.session.error = 'Username and password are required';
+      return res.redirect('/login');
     }
     
     // Find user by username
@@ -77,14 +86,16 @@ router.post('/login', async (req, res) => {
     
     if (!user) {
       // Don't reveal if username exists (security best practice)
-      return res.redirect('/login?error=' + encodeURIComponent('Invalid username or password'));
+      req.session.error = 'Invalid username or password';
+      return res.redirect('/login');
     }
     
     // Compare entered password with stored hash
     const passwordMatch = await comparePassword(password, user.password_hash);
     
     if (!passwordMatch) {
-      return res.redirect('/login?error=' + encodeURIComponent('Invalid username or password'));
+      req.session.error = 'Invalid username or password';
+      return res.redirect('/login');
     }
     
     // Successful login - update last login time
@@ -101,7 +112,8 @@ router.post('/login', async (req, res) => {
     
   } catch (error) {
     console.error('Login error:', error);
-    res.redirect('/error?message=' + encodeURIComponent('An internal server error occurred. Please try again later.') + '&back=/login');
+    req.session.error = 'An internal server error occurred. Please try again later.';
+    res.redirect('/login');
   }
 });
 

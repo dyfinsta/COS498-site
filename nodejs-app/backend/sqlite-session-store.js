@@ -8,7 +8,7 @@ class SQLiteStore extends Store {
     super(options);
     
     // Use provided database or default to sessions.db
-    const dbPath = options.db || path.join(__dirname, 'sessions.db');
+    const dbPath = options.db || path.join(__dirname, 'data', 'sessions.db');
     this.db = new Database(dbPath);
     
     // Table name (default: sessions)

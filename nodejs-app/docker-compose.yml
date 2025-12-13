@@ -4,6 +4,8 @@ services:
     build: ./backend
     container_name: backend-nodejs
     restart: unless-stopped
+    volumes:
+      - ./backend/data:/app/data  # Persist database and session data
     environment:
       - NODE_ENV=production
       - PORT=3000

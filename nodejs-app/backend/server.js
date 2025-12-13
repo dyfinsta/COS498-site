@@ -22,20 +22,22 @@ hbs.registerPartials(path.join(__dirname, 'views/partials'));
 
 // Session configuration with SQLite store (from Chapter 10)
 const sessionStore = new SQLiteStore({
-  db: path.join(__dirname, 'sessions.db'),
+  db: path.join(__dirname, 'data', 'sessions.db'),
   table: 'sessions'
 });
 
-app.use(session({
-  store: sessionStore,
-  secret: process.env.SESSION_SECRET || 'change-this-secret-in-production',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: false, // Set to true if using HTTPS
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
-}));
+app.use(
+  session({
+    store: sessionStore,
+    secret: process.env.SESSION_SECRET || 'change-this-secret-in-production',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false, // Set to true if using HTTPS
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+  })
+);
 
 app.get('/', (req, res) => {
   res.render('home');
@@ -46,7 +48,9 @@ app.use('/', authRoutes);
 
 // Protected route example (doing this manually by sending)
 app.get('/api/protected', requireAuth, (req, res) => {
-  res.send(`Protected route that needs authentication. User: ${req.session.username} ID: ${req.session.userId}`);
+  res.send(
+    `Protected route that needs authentication. User: ${req.session.username} ID: ${req.session.userId}`
+  );
 });
 
 // Start server
