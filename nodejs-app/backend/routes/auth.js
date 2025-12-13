@@ -4,6 +4,8 @@ const router = express.Router();
 const path = require('path');
 const db = require('../database/database.js');
 const { validatePassword, hashPassword, comparePassword } = require('../modules/password-utils');
+const loginTracker = require('../modules/login-tracker');
+const { checkLoginLockout, getClientIP } = require('../modules/auth-middleware');
 
 /**
  * GET /register - Show registration form
@@ -71,12 +73,17 @@ router.get('/login', (req, res) => {
 /**
  * POST /login - Authenticate user
  */
-router.post('/login', async (req, res) => {
+router.post('/login', checkLoginLockout, async (req, res) => {
   try {
     const { username, password } = req.body;
+    const ipAddress = getClientIP(req);
     
     // Validate input
     if (!username || !password) {
+      // Record failed attempt if username is provided
+      if (username) {
+        loginTracker.recordAttempt(ipAddress, username, false);
+      }
       req.session.error = 'Username and password are required';
       return res.redirect('/login');
     }
@@ -85,7 +92,8 @@ router.post('/login', async (req, res) => {
     const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
     
     if (!user) {
-      // Don't reveal if username exists (security best practice)
+      // Record failed attempt (user doesn't exist)
+      loginTracker.recordAttempt(ipAddress, username, false);
       req.session.error = 'Invalid username or password';
       return res.redirect('/login');
     }
@@ -94,11 +102,16 @@ router.post('/login', async (req, res) => {
     const passwordMatch = await comparePassword(password, user.password_hash);
     
     if (!passwordMatch) {
+      // Record failed attempt (wrong password)
+      loginTracker.recordAttempt(ipAddress, username, false);
       req.session.error = 'Invalid username or password';
       return res.redirect('/login');
     }
     
-    // Successful login - update last login time
+    // Successful login - record successful attempt
+    loginTracker.recordAttempt(ipAddress, username, true);
+    
+    // Update last login time
     db.prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?')
       .run(user.id);
     
@@ -108,11 +121,11 @@ router.post('/login', async (req, res) => {
     req.session.isLoggedIn = true;
     
     // Redirect to success page
-    res.redirect(`/login-success?username=${encodeURIComponent(user.username)}`);
+    res.redirect('/login-success');
     
   } catch (error) {
     console.error('Login error:', error);
-    req.session.error = 'An internal server error occurred. Please try again later.';
+    req.session.error = 'An error occurred during login';
     res.redirect('/login');
   }
 });
