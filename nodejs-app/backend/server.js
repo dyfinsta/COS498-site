@@ -3,6 +3,7 @@ const session = require('express-session');
 const router = express.Router();
 const hbs = require('hbs');
 const path = require('path');
+//module imports
 const { validatePassword, hashPassword, comparePassword } = require('./modules/password-utils');
 
 //database import
