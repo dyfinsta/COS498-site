@@ -1,0 +1,1 @@
+2025/12/13 15:53:30 [error] 195#195: *1 backend-nodejs could not be resolved (2: Server failure), client: 207.5.147.216, server: bankofarmenia.net, request: "GET / HTTP/1.1", host: "bankofarmenia.net"
