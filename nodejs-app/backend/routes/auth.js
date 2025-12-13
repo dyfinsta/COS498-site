@@ -5,7 +5,7 @@ const path = require('path');
 const db = require('../database/database.js');
 const { validatePassword, hashPassword, comparePassword } = require('../modules/password-utils');
 const loginTracker = require('../modules/login-tracker');
-const { checkLoginLockout, getClientIP } = require('../modules/auth-middleware');
+const { checkLoginLockout, getClientIP, requireAuth } = require('../modules/auth-middleware');
 
 /**
  * GET /register - Show registration form
@@ -21,26 +21,32 @@ router.get('/register', (req, res) => {
  */
 router.post('/register', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, email, display_name, password } = req.body;
     
     // Validate input
-    if (!username || !password) {
-      req.session.error = 'Username and password are required';
+    if (!username || !email || !display_name || !password) {
+      req.session.error = 'All fields are required';
+      return res.redirect('/register');
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      req.session.error = 'Please enter a valid email address';
       return res.redirect('/register');
     }
     
     // Validate password requirements
     const validation = validatePassword(password);
     if (!validation.valid) {
-      const errorsText = validation.errors.join(', ');
-      req.session.error = 'Password does not meet requirements: ' + errorsText;
+      req.session.error = validation.errors.join(', ');
       return res.redirect('/register');
     }
     
     // Check if username already exists
-    const existingUser = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
+    const existingUser = db.prepare('SELECT id FROM users WHERE username = ? OR email = ?').get(username, email);
     if (existingUser) {
-      req.session.error = 'Username already exists. Please choose a different username.';
+      req.session.error = 'Username or email already exists';
       return res.redirect('/register');
     }
     
@@ -48,15 +54,18 @@ router.post('/register', async (req, res) => {
     const passwordHash = await hashPassword(password);
     
     // Insert new user into database
-    const stmt = db.prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)');
-    const result = stmt.run(username, passwordHash);
+    const stmt = db.prepare(`
+      INSERT INTO users (username, email, display_name, password_hash) 
+      VALUES (?, ?, ?, ?)
+    `);
+    const result = stmt.run(username, email, display_name, passwordHash);
     
-    // Redirect to success page with username
-    res.redirect(`/register-success?username=${encodeURIComponent(username)}&userId=${result.lastInsertRowid}`);
+    // Redirect to success page
+    res.redirect('/register-success');
     
   } catch (error) {
     console.error('Registration error:', error);
-    req.session.error = 'An internal server error occurred. Please try again later.';
+    req.session.error = 'An error occurred during registration';
     res.redirect('/register');
   }
 });
@@ -102,13 +111,13 @@ router.post('/login', checkLoginLockout, async (req, res) => {
     const passwordMatch = await comparePassword(password, user.password_hash);
     
     if (!passwordMatch) {
-      // Record failed attempt (wrong password)
+      // Record failed attempt
       loginTracker.recordAttempt(ipAddress, username, false);
       req.session.error = 'Invalid username or password';
       return res.redirect('/login');
     }
     
-    // Successful login - record successful attempt
+    // Successful login
     loginTracker.recordAttempt(ipAddress, username, true);
     
     // Update last login time
@@ -198,8 +207,196 @@ router.get('/logged-out', (req, res) => {
   res.render('logged-out');
 });
 
-router.get('/profile', (req, res) => {
-  res.render('profile');
+// GET /profile - Show profile page (protected)
+router.get('/profile', requireAuth, (req, res) => {
+  try {
+    const user = db.prepare(`
+      SELECT id, username, email, display_name, profile_avatar_url, created_at, last_login 
+      FROM users WHERE id = ?
+    `).get(req.session.userId);
+    
+    if (!user) {
+      req.session.error = 'User not found';
+      return res.redirect('/login');
+    }
+
+    const success = req.session.success;
+    const error = req.session.error;
+    req.session.success = null;
+    req.session.error = null;
+
+    res.render('profile', { user, success, error });
+  } catch (error) {
+    console.error('Profile error:', error);
+    req.session.error = 'Error loading profile';
+    res.redirect('/');
+  }
+});
+
+// POST /profile/change-password
+router.post('/profile/change-password', requireAuth, async (req, res) => {
+  try {
+    const { current_password, new_password, confirm_password } = req.body;
+    
+    if (!current_password || !new_password || !confirm_password) {
+      req.session.error = 'All password fields are required';
+      return res.redirect('/profile');
+    }
+
+    if (new_password !== confirm_password) {
+      req.session.error = 'New passwords do not match';
+      return res.redirect('/profile');
+    }
+
+    // Get current user
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.session.userId);
+    
+    // Verify current password
+    const passwordMatch = await comparePassword(current_password, user.password_hash);
+    if (!passwordMatch) {
+      req.session.error = 'Current password is incorrect';
+      return res.redirect('/profile');
+    }
+
+    // Validate new password
+    const validation = validatePassword(new_password);
+    if (!validation.valid) {
+      req.session.error = validation.errors.join(', ');
+      return res.redirect('/profile');
+    }
+
+    // Hash and update password
+    const newPasswordHash = await hashPassword(new_password);
+    db.prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+      .run(newPasswordHash, req.session.userId);
+
+    // Invalidate all sessions
+    db.prepare('DELETE FROM sessions WHERE user_id = ?').run(req.session.userId);
+    
+    req.session.destroy((err) => {
+      res.redirect('/login?message=Password changed successfully. Please log in again.');
+    });
+
+  } catch (error) {
+    console.error('Change password error:', error);
+    req.session.error = 'Error changing password';
+    res.redirect('/profile');
+  }
+});
+
+// POST /profile/change-email
+router.post('/profile/change-email', requireAuth, async (req, res) => {
+  try {
+    const { current_password, new_email } = req.body;
+    
+    if (!current_password || !new_email) {
+      req.session.error = 'Password and new email are required';
+      return res.redirect('/profile');
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(new_email)) {
+      req.session.error = 'Please enter a valid email address';
+      return res.redirect('/profile');
+    }
+
+    // Get current user
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.session.userId);
+    
+    // Verify current password
+    const passwordMatch = await comparePassword(current_password, user.password_hash);
+    if (!passwordMatch) {
+      req.session.error = 'Current password is incorrect';
+      return res.redirect('/profile');
+    }
+
+    // Check if email already exists
+    const existingUser = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?')
+      .get(new_email, req.session.userId);
+    if (existingUser) {
+      req.session.error = 'Email address already in use';
+      return res.redirect('/profile');
+    }
+
+    // Update email
+    db.prepare('UPDATE users SET email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .run(new_email, req.session.userId);
+    
+    req.session.success = 'Email address updated successfully';
+    res.redirect('/profile');
+
+  } catch (error) {
+    console.error('Change email error:', error);
+    req.session.error = 'Error changing email';
+    res.redirect('/profile');
+  }
+});
+
+// POST /profile/change-display-name
+router.post('/profile/change-display-name', requireAuth, (req, res) => {
+  try {
+    const { new_display_name } = req.body;
+    
+    if (!new_display_name || new_display_name.trim().length < 2) {
+      req.session.error = 'Display name must be at least 2 characters';
+      return res.redirect('/profile');
+    }
+
+    if (new_display_name.length > 50) {
+      req.session.error = 'Display name must be less than 50 characters';
+      return res.redirect('/profile');
+    }
+
+    // Validate display name (letters, numbers, spaces, basic punctuation)
+    if (!/^[a-zA-Z0-9\s\-_.!?]+$/.test(new_display_name)) {
+      req.session.error = 'Display name contains invalid characters';
+      return res.redirect('/profile');
+    }
+
+    // Update display name
+    db.prepare('UPDATE users SET display_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .run(new_display_name.trim(), req.session.userId);
+    
+    req.session.success = 'Display name updated successfully';
+    res.redirect('/profile');
+
+  } catch (error) {
+    console.error('Change display name error:', error);
+    req.session.error = 'Error changing display name';
+    res.redirect('/profile');
+  }
+});
+
+
+// POST /profile/change-avatar - Update profile picture
+router.post('/profile/change-avatar', requireAuth, (req, res) => {
+  try {
+    const { profile_avatar_url } = req.body;
+    
+    let avatarUrl = '';
+    if (profile_avatar_url && profile_avatar_url.trim()) {
+      try {
+        new URL(profile_avatar_url); // Validate URL format
+        avatarUrl = profile_avatar_url.trim().substring(0, 500); // Limit length
+      } catch (e) {
+        req.session.error = 'Invalid image URL format';
+        return res.redirect('/profile');
+      }
+    }
+
+    // Update profile picture
+    db.prepare('UPDATE users SET profile_avatar_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .run(avatarUrl, req.session.userId);
+    
+    req.session.success = 'Profile picture updated successfully';
+    res.redirect('/profile');
+
+  } catch (error) {
+    console.error('Change avatar error:', error);
+    req.session.error = 'Error updating profile picture';
+    res.redirect('/profile');
+  }
 });
 
 module.exports = router;

@@ -1,5 +1,5 @@
 // modules/login-tracker.js
-const db = require('../database');
+const db = require('../database/database.js');
 
 // Configuration
 const MAX_ATTEMPTS = 5;           // Maximum failed attempts allowed

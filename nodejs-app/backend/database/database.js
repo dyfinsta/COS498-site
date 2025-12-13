@@ -18,9 +18,7 @@ db.exec(`
     password_hash TEXT NOT NULL,
     failed_attempts INTEGER DEFAULT 0,
     locked_until DATETIME NULL,
-    profile_bio TEXT,
     profile_avatar_url TEXT,
-    profile_theme TEXT DEFAULT 'default',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_login DATETIME,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
