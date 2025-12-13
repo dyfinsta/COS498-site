@@ -1,9 +1,23 @@
 const express = require('express');
 const session = require('express-session');
 const router = express.Router();
-const db = require('./database');
 const hbs = require('hbs');
 const path = require('path');
+const { validatePassword, hashPassword, comparePassword } = require('./modules/password-utils');
+
+//database import
+const {
+  db,
+  getUserByName,
+  getUserByEmail,
+  createUser,
+  getAllComments,
+  addComment,
+  recordLoginAttempt,
+  updateUserLockout,
+  resetFailedLoginAttempts
+} = require('./database');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -39,104 +53,73 @@ app.use(session({
 // Note: We don't include '/api' in our routes because nginx strips it when forwarding
 // nginx receives: http://localhost/api/users
 // nginx forwards to: http://backend-nodejs:3000/users (without /api)
+
+//home
 app.get('/', (req, res) => {
-  let user = {
-    name: 'Guest',
-    isLoggedIn: false,
-    loginTime: null,
-    visitCount: 0,
-  };
+  res.render('home', {
+    user: {
+      isLoggedIn: req.session.isLoggedIn || false,
+      name: req.session.username || 'Guest',
+      loginTime: req.session.loginTime || null,
+      visitCount: req.session.visitCount || 0
+    }
+  });
 
   if (req.session.isLoggedIn) {
-    user = {
-      name: req.session.username,
-      isLoggedIn: true,
-      loginTime: req.session.loginTime,
-      visitCount: req.session.visitCount || 0,
-    };
     req.session.visitCount = (req.session.visitCount || 0) + 1;
   }
-
-  res.render('home', { user });
 });
 
+//login
 app.get('/login', (req, res) => {
-    if (req.session.isLoggedIn) return res.redirect('/');
-    res.render('login', { 
-        error: req.query.error,
-        user: {
-            isLoggedIn: false,
-            name: 'Guest'
-        }
-    });
+  if (req.session.isLoggedIn) return res.redirect('/');
+  res.render('login', { error: req.query.error });
 });
 
 app.post('/login', (req, res) => {
-    const { username, password } = req.body;
+  const { username, password } = req.body;
+  if (!username || !password) return res.redirect('/login?error=missing');
 
-    if (!username || !password) {
-      console.log('Login failed: Missing fields');
-      return res.redirect('/login?error=missing');
-    }
+  const user = getUserByName.get(username);
+  if (!user) return res.redirect('/login?error=no_user');
 
-    const user = users.find(u => u.username === username);
-    if (!user) {
-      console.log('Login failed: User not found');
-      return res.redirect('/login?error=no_user');
-    }
+  if (user.password !== password) {
+    return res.redirect('/login?error=wrong_password');
+  }
 
-    if (user.password !== password) {
-      console.log('Login failed: Incorrect password');
-      return res.redirect('/login?error=wrong_password');
-    }
+  req.session.regenerate(err => {
+    if (err) return res.redirect('/login?error=1');
 
-    req.session.regenerate((err) => {
-      if (err) {
-        console.error('Error regenerating session:', err);
-        return res.redirect('/login?error=1');
-      }
+    req.session.isLoggedIn = true;
+    req.session.userId = user.id;
+    req.session.username = user.username;
+    req.session.loginTime = new Date().toLocaleString();
+    req.session.visitCount = 0;
 
-      req.session.isLoggedIn = true;
-      req.session.username = username;
-      req.session.loginTime = new Date().toLocaleString();
-      req.session.visitCount = 0;
-
-      console.log(`User ${username} logged in`);
-      res.redirect('/');
-    });
+    res.redirect('/');
+  });
 });
 
+// Register
 app.get('/register', (req, res) => {
-    if (req.session.isLoggedIn) return res.redirect('/');
-    res.render('register', { 
-        error: req.query.error,
-        user: {
-            isLoggedIn: false,
-            name: 'Guest'
-        }
-    });
+  if (req.session.isLoggedIn) return res.redirect('/');
+  res.render('register', { error: req.query.error });
 });
 
 app.post('/register', (req, res) => {
   const { username, password, confirm } = req.body;
-
   if (!username || !password || !confirm) {
-    console.log('Registration failed: Missing fields');
     return res.redirect('/register?error=missing');
   }
 
   if (password !== confirm) {
-    console.log('Registration failed: Passwords do not match');
     return res.redirect('/register?error=mismatch');
   }
 
-  if (users.find(user => user.username === username)) {
-    console.log('Registration failed: Username already taken');
-    return res.redirect('/register?error=taken');
-  }
+  const exists = getUserByName.get(username);
+  if (exists) return res.redirect('/register?error=taken');
 
-  users.push({ username, password });
-  console.log(`Registered new user: ${username}`);
+  createUser.run(username, password);
   res.redirect('/login');
 });
 
@@ -183,11 +166,9 @@ app.post('/comment', (req, res) => {
     res.redirect('/comments');
 });
 
+// Logout
 app.post('/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) console.log('Error destroying session:', err);
-    res.redirect('/');
-  });
+  req.session.destroy(() => res.redirect('/'));
 });
 
 app.use((req, res) => {
