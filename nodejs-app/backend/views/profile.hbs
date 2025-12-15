@@ -1,46 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>User Profile - {{user.display_name}}</title>
-  <style>
-    .profile-section {
-      margin: 20px 0;
-      padding: 20px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-    }
-    .form-group {
-      margin: 10px 0;
-    }
-    .form-group label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-    .form-group input, .form-group textarea {
-      width: 100%;
-      max-width: 400px;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    .avatar-preview {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin: 10px 0;
-      border: 2px solid #ddd;
-    }
-    .error { color: red; background: #ffebee; padding: 10px; margin: 10px 0; border: 1px solid red; border-radius: 4px; }
-    .success { color: green; background: #e8f5e8; padding: 10px; margin: 10px 0; border: 1px solid green; border-radius: 4px; }
-    .profile-info {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{title}}</title>
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   {{> nav}}
@@ -48,49 +12,56 @@
   <main>
     <h1>User Profile</h1>
     
-    {{#if error}}
-    <div class="error"><strong>Error:</strong> {{error}}</div>
-    {{/if}}
-    
-    {{#if success}}
-    <div class="success"><strong>Success:</strong> {{success}}</div>
-    {{/if}}
-
-    <!-- Current Profile Display -->
     <div class="profile-section">
       <h2>Current Profile</h2>
+      
       <div class="profile-info">
-        <img src="{{user.profile_avatar_url}}" alt="Profile Picture" class="avatar-preview" 
-             onerror="this.src='https://via.placeholder.com/100x100/cccccc/ffffff?text=No+Image'">
-        <div>
-          <p><strong>Username:</strong> {{user.username}}</p>
-          <p><strong>Display Name:</strong> {{user.display_name}}</p>
-          <p><strong>Email:</strong> {{user.email}}</p>
-          <p><strong>Member Since:</strong> {{user.created_at}}</p>
-          <p><strong>Last Login:</strong> {{user.last_login}}</p>
+        <div class="profile-avatar-section">
+          {{#if profile.profile_avatar_url}}
+            <img src="{{profile.profile_avatar_url}}" alt="Profile Picture" class="profile-avatar-large">
+          {{else}}
+            <div class="profile-avatar-placeholder-large">
+              {{substring profile.display_name 0 1}}
+            </div>
+          {{/if}}
+        </div>
+        
+        <div class="profile-details">
+          <div class="profile-field">
+            <strong>Username:</strong> {{profile.username}}
+          </div>
+          <div class="profile-field">
+            <strong>Display Name:</strong> {{profile.display_name}}
+          </div>
+          <div class="profile-field">
+            <strong>Email:</strong> {{profile.email}}
+          </div>
+          <div class="profile-field">
+            <strong>Member Since:</strong> {{formatDate profile.created_at}}
+          </div>
+          {{#if profile.last_login}}
+          <div class="profile-field">
+            <strong>Last Login:</strong> {{formatDate profile.last_login}}
+          </div>
+          {{/if}}
         </div>
       </div>
     </div>
 
-    <!-- Change Profile Picture -->
     <div class="profile-section">
       <h2>Change Profile Picture</h2>
       <form method="POST" action="/profile/change-avatar">
         <div class="form-group">
           <label for="profile_avatar_url">Profile Picture URL:</label>
           <input type="url" id="profile_avatar_url" name="profile_avatar_url" 
-                 value="{{user.profile_avatar_url}}" placeholder="https://example.com/your-picture.jpg">
+                 value="{{profile.profile_avatar_url}}" 
+                 placeholder="https://example.com/your-picture.jpg">
           <small>Enter a URL to an image (JPG, PNG, GIF). Leave blank to remove picture.</small>
-        </div>
-        <div class="form-group">
-          <img id="avatar_preview" src="{{user.profile_avatar_url}}" alt="Preview" class="avatar-preview"
-               onerror="this.style.display='none'">
         </div>
         <button type="submit">Update Profile Picture</button>
       </form>
     </div>
 
-    <!-- Change Password -->
     <div class="profile-section">
       <h2>Change Password</h2>
       <form method="POST" action="/profile/change-password">
@@ -110,54 +81,33 @@
       </form>
     </div>
 
-    <!-- Change Email -->
     <div class="profile-section">
       <h2>Change Email</h2>
       <form method="POST" action="/profile/change-email">
         <div class="form-group">
-          <label for="current_password_email">Current Password:</label>
-          <input type="password" id="current_password_email" name="current_password" required>
-        </div>
-        <div class="form-group">
           <label for="new_email">New Email:</label>
           <input type="email" id="new_email" name="new_email" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Current Password:</label>
+          <input type="password" id="password" name="password" required>
         </div>
         <button type="submit">Change Email</button>
       </form>
     </div>
 
-    <!-- Change Display Name -->
     <div class="profile-section">
       <h2>Change Display Name</h2>
       <form method="POST" action="/profile/change-display-name">
         <div class="form-group">
           <label for="new_display_name">New Display Name:</label>
           <input type="text" id="new_display_name" name="new_display_name" 
-                 value="{{user.display_name}}" required minlength="2" maxlength="50">
-          <small>2-50 characters, letters, numbers, spaces, and basic punctuation only</small>
+                 value="{{profile.display_name}}" required>
         </div>
         <button type="submit">Change Display Name</button>
       </form>
     </div>
   </main>
-
-  <script>
-    // Avatar preview functionality
-    document.getElementById('profile_avatar_url').addEventListener('input', function() {
-      const preview = document.getElementById('avatar_preview');
-      if (this.value.trim()) {
-        preview.src = this.value;
-        preview.style.display = 'block';
-      } else {
-        preview.style.display = 'none';
-      }
-    });
-
-    // Handle image load errors
-    document.getElementById('avatar_preview').addEventListener('error', function() {
-      this.style.display = 'none';
-    });
-  </script>
 
   {{> footer}}
 </body>

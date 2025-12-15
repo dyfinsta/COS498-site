@@ -207,29 +207,27 @@ router.get('/logged-out', (req, res) => {
   res.render('logged-out');
 });
 
-// GET /profile - Show profile page (protected)
+// Show profile page
 router.get('/profile', requireAuth, (req, res) => {
   try {
-    const user = db.prepare(`
-      SELECT id, username, email, display_name, profile_avatar_url, created_at, last_login 
-      FROM users WHERE id = ?
-    `).get(req.session.userId);
+    const stmt = db.prepare('SELECT username, email, display_name, profile_avatar_url, created_at, last_login FROM users WHERE id = ?');
+    const userProfile = stmt.get(req.session.userId);
     
-    if (!user) {
-      req.session.error = 'User not found';
-      return res.redirect('/login');
+    if (!userProfile) {
+      return res.render('error', { message: 'User not found' });
     }
-
-    const success = req.session.success;
-    const error = req.session.error;
-    req.session.success = null;
-    req.session.error = null;
-
-    res.render('profile', { user, success, error });
+    
+    if (!req.session.displayName && userProfile.display_name) {
+      req.session.displayName = userProfile.display_name;
+    }
+    
+    res.render('profile', { 
+      profile: userProfile,
+      title: 'User Profile'
+    });
   } catch (error) {
-    console.error('Profile error:', error);
-    req.session.error = 'Error loading profile';
-    res.redirect('/');
+    console.error('Error loading profile:', error);
+    res.render('error', { message: 'Error loading profile' });
   }
 });
 

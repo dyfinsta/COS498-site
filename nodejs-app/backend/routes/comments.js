@@ -6,10 +6,10 @@ const { requireAuth } = require('../modules/auth-middleware');
 // Display all comments
 router.get('/comments', (req, res) => {
   try {
-    // Join comments with users to display user info on comments
     const stmt = db.prepare(`
       SELECT 
         c.id,
+        c.author_id,
         c.content,
         c.created_at,
         c.updated_at,
@@ -26,14 +26,7 @@ router.get('/comments', (req, res) => {
     
     const comments = stmt.all();
     
-    res.render('comments', { 
-      comments: comments,
-      user: {
-        isLoggedIn: req.session && req.session.userId,
-        username: req.session?.username,
-        displayName: req.session?.displayName
-      }
-    });
+    res.render('comments', { comments: comments });
   } catch (error) {
     console.error('Error fetching comments:', error);
     res.render('error', { message: 'Error loading comments' });
@@ -69,6 +62,121 @@ router.post('/comment/new', requireAuth, (req, res) => {
     res.render('new-comment', { 
       error: 'Error creating comment. Please try again.' 
     });
+  }
+});
+
+// Comment edit form
+router.get('/comment/:id/edit', requireAuth, (req, res) => {
+  try {
+    const commentId = req.params.id;
+    
+    // Get the comment and verif user
+    const stmt = db.prepare(`
+      SELECT c.*, u.display_name, u.username 
+      FROM comments c
+      INNER JOIN users u ON c.author_id = u.id
+      WHERE c.id = ?
+    `);
+    
+    const comment = stmt.get(commentId);
+    
+    if (!comment) {
+      return res.render('error', { message: 'Comment not found' });
+    }
+    
+    if (comment.author_id !== req.session.userId) {
+      return res.render('error', { 
+        message: 'You can only edit your own comments' 
+      });
+    }
+    
+    res.render('edit-comment', { comment });
+  } catch (error) {
+    console.error('Error loading comment for edit:', error);
+    res.render('error', { message: 'Error loading comment' });
+  }
+});
+
+// Edit a comment
+router.post('/comment/:id/edit', requireAuth, (req, res) => {
+  try {
+    const commentId = req.params.id;
+    const { content } = req.body;
+    
+    if (!content || content.trim().length === 0) {
+      const stmt = db.prepare('SELECT * FROM comments WHERE id = ?');
+      const comment = stmt.get(commentId);
+      
+      return res.render('edit-comment', { 
+        comment,
+        error: 'Comment content is required' 
+      });
+    }
+    
+    // Verify ownership before updating
+    const checkStmt = db.prepare('SELECT author_id FROM comments WHERE id = ?');
+    const comment = checkStmt.get(commentId);
+    
+    if (!comment) {
+      return res.render('error', { message: 'Comment not found' });
+    }
+    
+    if (comment.author_id !== req.session.userId) {
+      return res.render('error', { 
+        message: 'You can only edit your own comments' 
+      });
+    }
+    
+    // Update the comment
+    const updateStmt = db.prepare(`
+      UPDATE comments 
+      SET content = ?, updated_at = CURRENT_TIMESTAMP, edited = 1
+      WHERE id = ? AND author_id = ?
+    `);
+    
+    const result = updateStmt.run(content.trim(), commentId, req.session.userId);
+    
+    if (result.changes === 0) {
+      return res.render('error', { message: 'Failed to update comment' });
+    }
+    
+    res.redirect('/comments');
+  } catch (error) {
+    console.error('Error updating comment:', error);
+    res.render('error', { message: 'Error updating comment' });
+  }
+});
+
+// Delete comment
+router.post('/comment/:id/delete', requireAuth, (req, res) => {
+  try {
+    const commentId = req.params.id;
+    
+    // Verify user before deleting
+    const checkStmt = db.prepare('SELECT author_id FROM comments WHERE id = ?');
+    const comment = checkStmt.get(commentId);
+    
+    if (!comment) {
+      return res.render('error', { message: 'Comment not found' });
+    }
+    
+    if (comment.author_id !== req.session.userId) {
+      return res.render('error', { 
+        message: 'You can only delete your own comments' 
+      });
+    }
+    
+    const deleteStmt = db.prepare('DELETE FROM comments WHERE id = ? AND author_id = ?');
+    const result = deleteStmt.run(commentId, req.session.userId);
+    
+    if (result.changes === 0) {
+      return res.render('error', { message: 'Failed to delete comment' });
+    }
+    
+    res.redirect('/comments');
+  } catch (error) {
+    console.error('Error deleting comment:', error);
+    res.render('error', { message: 'Error deleting comment' });
   }
 });
 

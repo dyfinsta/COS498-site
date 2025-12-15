@@ -32,6 +32,10 @@ hbs.registerHelper('substring', function(str, start, length) {
   return str.substring(start, start + length);
 });
 
+hbs.registerHelper('eq', function(a,b){
+  return a === b;
+});
+
 // Session configuration with SQLite store (from Chapter 10)
 const sessionStore = new SQLiteStore({
   db: path.join(__dirname, 'data', 'sessions.db'),
@@ -51,8 +55,18 @@ app.use(
   })
 );
 
+app.use((req, res, next) => {
+  res.locals.user = {
+    isLoggedIn: req.session && req.session.userId,
+    userId: req.session?.userId,
+    username: req.session?.username,
+    displayName: req.session?.displayName
+  };
+  next();
+});
+
 app.get('/', (req, res) => {
-  res.render('home');
+  res.render('home', { title: 'The Forum' });
 });
 
 // Routes

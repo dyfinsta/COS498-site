@@ -25,15 +25,25 @@
           {{/if}}
           <div class="comment-meta">
             <strong class="comment-author">{{display_name}}</strong>
-            <small class="comment-date">{{createdAt}}</small>
+            <small class="comment-date">{{formatDate created_at}}</small>
+            {{#if edited}}
+              <small class="comment-edited">(edited {{formatDate updated_at}})</small>
+            {{/if}}
           </div>
+          
+          {{!-- Show edit/delete options only for comment owner --}}
+          {{#if ../user.isLoggedIn}}
+            {{#if (eq author_id ../user.userId)}}
+              <div class="comment-actions">
+                <a href="/comment/{{id}}/edit" class="comment-action-link">Edit</a>
+              </div>
+            {{/if}}
+          {{/if}}
         </div>
+        
         <div class="comment-content">
           <p>{{content}}</p>
         </div>
-        {{#if edited}}
-          <small class="comment-edited">(edited)</small>
-        {{/if}}
       </div>
       <hr>
     {{else}}

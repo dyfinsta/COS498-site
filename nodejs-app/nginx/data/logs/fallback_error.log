@@ -88,3 +88,5 @@
 2025/12/10 15:23:01 [error] 217#217: *109 open() "/var/www/html/config.json" failed (2: No such file or directory), client: 64.226.65.160, server: localhost-nginx-proxy-manager, request: "GET /config.json HTTP/1.1", host: "bankofarmenia.net"
 2025/12/10 15:23:02 [error] 217#217: *111 open() "/var/www/html/telescope/requests" failed (2: No such file or directory), client: 64.226.65.160, server: localhost-nginx-proxy-manager, request: "GET /telescope/requests HTTP/1.1", host: "bankofarmenia.net"
 2025/12/10 15:23:03 [error] 217#217: *113 open() "/var/www/html/info.php" failed (2: No such file or directory), client: 64.226.65.160, server: localhost-nginx-proxy-manager, request: "GET /info.php HTTP/1.1", host: "bankofarmenia.net"
+2025/12/15 16:51:13 [error] 195#195: unexpected DNS response for backend-nodejs
+2025/12/15 16:51:13 [error] 195#195: unexpected DNS response for backend-nodejs
