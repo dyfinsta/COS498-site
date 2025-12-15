@@ -81,6 +81,60 @@ textarea {
   border-radius: 8px;
 }
 
+.comment-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.comment-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 12px;
+  object-fit: cover;
+}
+
+.comment-avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #B2A3D4;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+  margin-right: 12px;
+  text-transform: uppercase;
+}
+
+.comment-meta {
+  flex-grow: 1;
+}
+
+.comment-author {
+  display: block;
+  font-size: 16px;
+  color: #333;
+}
+
+.comment-date {
+  color: #666;
+  font-size: 12px;
+}
+
+.comment-content {
+  margin-left: 52px; /* Align with the text, not the avatar */
+}
+
+.comment-edited {
+  margin-left: 52px;
+  color: #999;
+  font-style: italic;
+}
+
 .footer {
   text-align: center;
   padding: 20px;

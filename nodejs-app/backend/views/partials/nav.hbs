@@ -3,15 +3,12 @@
     <a href="/">Home</a>
     <a href="/comments">Comments</a>
     {{#if user.isLoggedIn}}
-      <a href="/comment/new">New Comment</a>
-      <form action="/logout" method="POST" style="display:inline;">
-        <button type="submit">Logout</button>
-      </form>
+      <a href="/profile">Profile</a>
+      <a href="/logout">Logout</a>
     {{else}}
       <a href="/login">Login</a>
       <a href="/register">Register</a>
     {{/if}}
   </nav>
-  <hr>
 </header>
 

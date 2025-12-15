@@ -17,9 +17,23 @@
 
     {{#each comments}}
       <div class="comment">
-        <p><strong>{{author}}</strong> wrote:</p>
-        <p>{{text}}</p>
-        <small>{{createdAt}}</small>
+        <div class="comment-header">
+          {{#if profile_avatar_url}}
+            <img src="{{profile_avatar_url}}" alt="{{display_name}}'s avatar" class="comment-avatar">
+          {{else}}
+            <div class="comment-avatar-placeholder">{{substring display_name 0 1}}</div>
+          {{/if}}
+          <div class="comment-meta">
+            <strong class="comment-author">{{display_name}}</strong>
+            <small class="comment-date">{{createdAt}}</small>
+          </div>
+        </div>
+        <div class="comment-content">
+          <p>{{content}}</p>
+        </div>
+        {{#if edited}}
+          <small class="comment-edited">(edited)</small>
+        {{/if}}
       </div>
       <hr>
     {{else}}

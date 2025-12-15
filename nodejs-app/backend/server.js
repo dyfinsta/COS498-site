@@ -4,6 +4,7 @@ const session = require('express-session');
 const SQLiteStore = require('./sqlite-session-store'); // From Chapter 10
 const path = require('path');
 const authRoutes = require('./routes/auth');
+const commentRoutes = require('./routes/comments');
 const hbs = require('hbs');
 const { requireAuth } = require('./modules/auth-middleware');
 
@@ -19,6 +20,17 @@ app.use(express.static('public'));
 app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'views'));
 hbs.registerPartials(path.join(__dirname, 'views/partials'));
+
+hbs.registerHelper('formatDate', function(date) {
+  if (!date) return '';
+  const d = new Date(date);
+  return d.toLocaleDateString() + ' at ' + d.toLocaleTimeString();
+});
+
+hbs.registerHelper('substring', function(str, start, length) {
+  if (!str) return '';
+  return str.substring(start, start + length);
+});
 
 // Session configuration with SQLite store (from Chapter 10)
 const sessionStore = new SQLiteStore({
@@ -45,6 +57,7 @@ app.get('/', (req, res) => {
 
 // Routes
 app.use('/', authRoutes);
+app.use('/', commentRoutes);
 
 // Protected route example (doing this manually by sending)
 app.get('/api/protected', requireAuth, (req, res) => {

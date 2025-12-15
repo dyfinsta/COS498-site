@@ -2,17 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>{{title}}</title>
+  <title>Write a Comment</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   {{> nav}}
   <main>
-    <h2>New Comment</h2>
-    <form action="/comment" method="POST">
-      <textarea name="text" rows="4" cols="50" placeholder="Write your comment..." required></textarea><br>
+    <h2>Write a New Comment</h2>
+    
+    {{#if error}}
+    <div class="error">
+      {{error}}
+    </div>
+    {{/if}}
+    
+    <form method="POST" action="/comment/new">
+      <div>
+        <label for="content">Comment:</label>
+        <textarea id="content" name="content" rows="5" required placeholder="Share your thoughts..."></textarea>
+      </div>
       <button type="submit">Post Comment</button>
     </form>
+    
+    <p><a href="/comments">← Back to Comments</a></p>
   </main>
   {{> footer}}
 </body>
