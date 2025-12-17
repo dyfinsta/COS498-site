@@ -22,8 +22,6 @@ function checkLockout(ipAddress, username) {
   const cutoffTime = Date.now() - LOCKOUT_DURATION;
   
   // Get all failed attempts for this IP+username combination in the lockout window
-  // 'unixepoch' tells SQLite to interpret the number as seconds since Jan 1, 1970
-  // We divide Date.now() by 1000 to convert from milliseconds to seconds
   const stmt = db.prepare(`
     SELECT COUNT(*) as count, MAX(attempt_time) as last_attempt
     FROM login_attempts
@@ -62,7 +60,6 @@ function checkLockout(ipAddress, username) {
 function cleanupOldAttempts() {
   const cutoffTime = Date.now() - LOCKOUT_DURATION;
   
-  // 'unixepoch' interprets the number as seconds since Unix epoch (Jan 1, 1970)
   const stmt = db.prepare(`
     DELETE FROM login_attempts
     WHERE datetime(attempt_time) < datetime(?, 'unixepoch')

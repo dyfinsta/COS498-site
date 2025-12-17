@@ -16,6 +16,8 @@ db.exec(`
     email TEXT UNIQUE NOT NULL,
     display_name TEXT NOT NULL,
     password_hash TEXT NOT NULL,
+    security_question TEXT,
+    security_answer_hash TEXT,
     failed_attempts INTEGER DEFAULT 0,
     locked_until DATETIME NULL,
     profile_avatar_url TEXT,

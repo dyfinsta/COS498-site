@@ -295,3 +295,35 @@ input[type="url"] {
   border-radius: 4px;
   box-sizing: border-box;
 }
+
+.security-section {
+  background: #f0f8ff;
+  padding: 15px;
+  border-radius: 6px;
+  margin: 15px 0;
+  border-left: 4px solid #B2A3D4;
+}
+
+.security-section h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+select {
+  width: 100%;
+  padding: 8px;
+  margin: 8px 0 16px;
+  border: 1px solid #BEDDB3;
+  border-radius: 4px;
+  box-sizing: border-box;
+  background: white;
+}
+
+input[type="email"] {
+  width: 100%;
+  padding: 8px;
+  margin: 8px 0 16px;
+  border: 1px solid #BEDDB3;
+  border-radius: 4px;
+  box-sizing: border-box;
+}

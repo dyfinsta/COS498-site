@@ -3,44 +3,73 @@
 <head>
   <meta charset="UTF-8">
   <title>Register</title>
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <h1>Register New User</h1>
-  <div>
-    <strong>Password Requirements:</strong>
-    <ul>
-      <li>At least 8 characters long</li>
-      <li>At least one uppercase letter</li>
-      <li>At least one lowercase letter</li>
-      <li>At least one number</li>
-      <li>At least one special character</li>
-    </ul>
-  </div>
-  {{#if error}}
-  <div style="color: red; background: #ffebee; padding: 10px; margin: 10px 0; border: 1px solid red; border-radius: 4px;">
-    <strong>Error:</strong> {{error}}
-  </div>
-  {{/if}}
-  <form method="POST" action="/register">
+  {{> nav}}
+  
+  <main>
+    <h1>Register New User</h1>
     <div>
-      <label for="username">Username:</label>
-      <input type="text" id="username" name="username" required>
+      <strong>Password Requirements:</strong>
+      <ul>
+        <li>At least 8 characters long</li>
+        <li>At least one uppercase letter</li>
+        <li>At least one lowercase letter</li>
+        <li>At least one number</li>
+        <li>At least one special character</li>
+      </ul>
     </div>
-    <div>
-      <label for="email">Email:</label>
-      <input type="email" id="email" name="email" required>
+    {{#if error}}
+    <div style="color: red; background: #ffebee; padding: 10px; margin: 10px 0; border: 1px solid red; border-radius: 4px;">
+      <strong>Error:</strong> {{error}}
     </div>
-    <div>
-      <label for="display_name">Display Name:</label>
-      <input type="text" id="display_name" name="display_name" required>
-    </div>
-    <div>
-      <label for="password">Password:</label>
-      <input type="password" id="password" name="password" required>
-    </div>
-    <button type="submit">Register</button>
-  </form>
-  <p><a href="/login">Already have an account? Login here</a></p>
-  <p><a href="/">← Back to Home</a></p>
+    {{/if}}
+    <form method="POST" action="/register">
+      <div>
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+      </div>
+      <div>
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+      <div>
+        <label for="display_name">Display Name:</label>
+        <input type="text" id="display_name" name="display_name" required>
+      </div>
+      <div>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+      </div>
+      
+      <div class="security-section">
+        <h3>Security Question (for password recovery)</h3>
+        <div>
+          <label for="security_question">Security Question:</label>
+          <select id="security_question" name="security_question" required>
+            <option value="">Choose a security question...</option>
+            <option value="What was the name of your first pet?">What was the name of your first pet?</option>
+            <option value="What city were you born in?">What city were you born in?</option>
+            <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+            <option value="What was the name of your first school?">What was the name of your first school?</option>
+            <option value="What is your favorite book?">What is your favorite book?</option>
+            <option value="What was your childhood nickname?">What was your childhood nickname?</option>
+          </select>
+        </div>
+        <div>
+          <label for="security_answer">Security Answer:</label>
+          <input type="text" id="security_answer" name="security_answer" required 
+                 placeholder="Enter your answer (case-insensitive)">
+        </div>
+      </div>
+      
+      <button type="submit">Register</button>
+    </form>
+    <p><a href="/login">Already have an account? Login here</a></p>
+    <p><a href="/">← Back to Home</a></p>
+  </main>
+  
+  {{> footer}}
 </body>
 </html>
