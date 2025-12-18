@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{title}}</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  {{> nav}}
+
+  <main>
+    <div class="chat-container">
+      <div class="chat-header">
+        <h1>Live Chat</h1>
+        <div class="chat-stats">
+          <span id="onlineCount">Connecting...</span>
+          <span id="messageStats"></span>
+        </div>
+      </div>
+
+      <div class="chat-messages" id="chatMessages">
+        <div class="loading">Loading chat history...</div>
+      </div>
+
+      <div class="typing-indicators" id="typingIndicators"></div>
+
+      <div class="chat-input-container">
+        <div class="chat-input-wrapper">
+          <input 
+            type="text" 
+            id="messageInput" 
+            placeholder="Type your message..." 
+            maxlength="500"
+            autocomplete="off"
+          >
+          <button id="sendButton" type="button">Send</button>
+        </div>
+        <div class="message-counter">
+          <span id="charCounter">0/500</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  {{> footer}}
+
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  <script>
+    // Chat application
+    class ChatApp {
+      constructor() {
+        this.socket = null;
+        this.typingTimer = null;
+        this.isTyping = false;
+        this.currentUser = {
+          userId: {{user.userId}},
+          displayName: '{{user.displayName}}'
+        };
+        
+        this.init();
+      }
+      
+      init() {
+        this.setupElements();
+        this.connectSocket();
+        this.loadChatHistory();
+        this.setupEventListeners();
+      }
+      
+      setupElements() {
+        this.messagesContainer = document.getElementById('chatMessages');
+        this.messageInput = document.getElementById('messageInput');
+        this.sendButton = document.getElementById('sendButton');
+        this.typingIndicators = document.getElementById('typingIndicators');
+        this.charCounter = document.getElementById('charCounter');
+        this.onlineCount = document.getElementById('onlineCount');
+        this.messageStats = document.getElementById('messageStats');
+      }
+      
+      connectSocket() {
+        this.socket = io({
+          withCredentials: true
+        });
+        
+        this.socket.on('connect', () => {
+          console.log('Connected to chat server');
+          this.onlineCount.textContent = 'Connected';
+        });
+        
+        this.socket.on('disconnect', () => {
+          console.log('Disconnected from chat server');
+          this.onlineCount.textContent = 'Disconnected';
+        });
+        
+        this.socket.on('error', (error) => {
+          console.error('Socket error:', error);
+          this.showSystemMessage('Connection error: ' + error.message, 'error');
+        });
+        
+        // Handle new messages
+        this.socket.on('newMessage', (data) => {
+          this.displayMessage(data);
+          this.scrollToBottom();
+        });
+        
+        // Handle user join/leave
+        this.socket.on('userJoined', (data) => {
+          this.showSystemMessage(data.message, 'join');
+        });
+        
+        this.socket.on('userLeft', (data) => {
+          this.showSystemMessage(data.message, 'leave');
+        });
+        
+        // Handle typing indicators
+        this.socket.on('userTyping', (data) => {
+          this.showTypingIndicator(data);
+        });
+        
+        this.socket.on('userStoppedTyping', (data) => {
+          this.hideTypingIndicator(data.userId);
+        });
+      }
+      
+      setupEventListeners() {
+        // Send message on button click
+        this.sendButton.addEventListener('click', () => {
+          this.sendMessage();
+        });
+        
+        // Send message on Enter key
+        this.messageInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            this.sendMessage();
+          }
+        });
+        
+        // Handle typing indicators
+        this.messageInput.addEventListener('input', () => {
+          this.updateCharCounter();
+          this.handleTyping();
+        });
+        
+        // Auto-scroll when user scrolls to bottom
+        this.messagesContainer.addEventListener('scroll', () => {
+          const { scrollTop, scrollHeight, clientHeight } = this.messagesContainer;
+          if (scrollTop + clientHeight >= scrollHeight - 5) {
+            this.messagesContainer.classList.add('auto-scroll');
+          } else {
+            this.messagesContainer.classList.remove('auto-scroll');
+          }
+        });
+      }
+      
+      async loadChatHistory() {
+        try {
+          const response = await fetch('/api/chat/messages?limit=50', {
+            credentials: 'include'
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            this.messagesContainer.innerHTML = '';
+            
+            data.messages.forEach(message => {
+              this.displayMessage({
+                id: message.id,
+                message: message.message,
+                displayName: message.display_name,
+                profileAvatarUrl: message.profile_avatar_url,
+                timestamp: message.created_at,
+                userId: message.user_id
+              });
+            });
+            
+            this.scrollToBottom();
+            this.loadStats();
+          }
+        } catch (error) {
+          console.error('Error loading chat history:', error);
+          this.showSystemMessage('Failed to load chat history', 'error');
+        }
+      }
+      
+      async loadStats() {
+        try {
+          const response = await fetch('/api/chat/stats', {
+            credentials: 'include'
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            this.messageStats.textContent = 
+              `${data.stats.totalMessages} total messages (${data.stats.todayMessages} today)`;
+          }
+        } catch (error) {
+          console.error('Error loading stats:', error);
+        }
+      }
+      
+      sendMessage() {
+        const message = this.messageInput.value.trim();
+        
+        if (!message) return;
+        
+        if (message.length > 500) {
+          this.showSystemMessage('Message too long (max 500 characters)', 'error');
+          return;
+        }
+        
+        // Send via Socket.io
+        this.socket.emit('sendMessage', {
+          message: message
+        });
+        
+        // Clear input
+        this.messageInput.value = '';
+        this.updateCharCounter();
+        this.stopTyping();
+      }
+      
+      displayMessage(data) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'chat-message';
+        
+        if (data.userId === this.currentUser.userId) {
+          messageDiv.classList.add('own-message');
+        }
+        
+        const timestamp = new Date(data.timestamp).toLocaleTimeString();
+        
+        messageDiv.innerHTML = `
+          <div class="message-header">
+            ${data.profileAvatarUrl ? 
+              `<img src="${data.profileAvatarUrl}" alt="${data.displayName}" class="message-avatar">` :
+              `<div class="message-avatar-placeholder">${data.displayName.charAt(0).toUpperCase()}</div>`
+            }
+            <div class="message-info">
+              <span class="message-author">${data.displayName}</span>
+              <span class="message-time">${timestamp}</span>
+            </div>
+          </div>
+          <div class="message-content">${this.escapeHtml(data.message)}</div>
+        `;
+        
+        this.messagesContainer.appendChild(messageDiv);
+        
+        // Auto-scroll if user is at bottom
+        if (this.messagesContainer.classList.contains('auto-scroll') || 
+            this.messagesContainer.scrollHeight - this.messagesContainer.scrollTop <= 
+            this.messagesContainer.clientHeight + 100) {
+          this.scrollToBottom();
+        }
+      }
+      
+      showSystemMessage(message, type) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `system-message ${type}`;
+        messageDiv.textContent = message;
+        
+        this.messagesContainer.appendChild(messageDiv);
+        this.scrollToBottom();
+      }
+      
+      handleTyping() {
+        if (!this.isTyping) {
+          this.isTyping = true;
+          this.socket.emit('typing');
+        }
+        
+        clearTimeout(this.typingTimer);
+        this.typingTimer = setTimeout(() => {
+          this.stopTyping();
+        }, 1000);
+      }
+      
+      stopTyping() {
+        if (this.isTyping) {
+          this.isTyping = false;
+          this.socket.emit('stopTyping');
+        }
+        clearTimeout(this.typingTimer);
+      }
+      
+      showTypingIndicator(data) {
+        if (data.userId === this.currentUser.userId) return;
+        
+        const indicator = document.createElement('div');
+        indicator.id = `typing-${data.userId}`;
+        indicator.className = 'typing-indicator';
+        indicator.innerHTML = `
+          <span>${data.displayName} is typing</span>
+          <div class="typing-dots">
+            <span></span><span></span><span></span>
+          </div>
+        `;
+        
+        this.hideTypingIndicator(data.userId);
+        this.typingIndicators.appendChild(indicator);
+      }
+      
+      hideTypingIndicator(userId) {
+        const indicator = document.getElementById(`typing-${userId}`);
+        if (indicator) {
+          indicator.remove();
+        }
+      }
+      
+      updateCharCounter() {
+        const length = this.messageInput.value.length;
+        this.charCounter.textContent = `${length}/500`;
+        
+        if (length > 450) {
+          this.charCounter.style.color = 'red';
+        } else if (length > 400) {
+          this.charCounter.style.color = 'orange';
+        } else {
+          this.charCounter.style.color = '';
+        }
+      }
+      
+      scrollToBottom() {
+        this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+        this.messagesContainer.classList.add('auto-scroll');
+      }
+      
+      escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+    }
+    
+    // Initialize chat when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      new ChatApp();
+    });
+  </script>
+</body>
+</html>

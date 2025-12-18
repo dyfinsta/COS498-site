@@ -1,13 +1,20 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Logged Out</title>
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <h1>Logged Out Successfully</h1>
-  <p>You have been logged out.</p>
-  <p><a href="/login">Login again</a></p>
-  <p><a href="/">← Back to Home</a></p>
+  {{> nav}}
+  
+  <main>
+    <h1>Logged Out Successfully</h1>
+    <p>You have been logged out.</p>
+    <p><a href="/login">Login again</a></p>
+    <p><a href="/">← Back to Home</a></p>
+  </main>
+  
+  {{> footer}}
 </body>
 </html>

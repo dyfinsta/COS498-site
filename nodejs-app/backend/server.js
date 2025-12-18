@@ -76,7 +76,7 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/', authRoutes);
 app.use('/', commentRoutes);
-// app.use('/', chatRoutes);
+app.use('/', chatRoutes);
 
 // Socket setup
 const io = new Server(server, {
@@ -94,7 +94,7 @@ io.on('connection', (socket) => {
   const session = socket.request.session;
 
   //check auth
-  if (!session.isLoggedIn){
+  if (!session.userId){
     socket.emit('error', { message: 'Authentication required'});
     socket.disconnect();
     return;
@@ -143,7 +143,7 @@ io.on('connection', (socket) => {
       };
       
       // Send to all users in the chat room (including sender)
-      io.to('general-chat').emit('newMessage', messageData);
+      io.to('chat').emit('newMessage', messageData);
       
     } catch (error) {
       console.error('Error saving chat message:', error);
@@ -155,7 +155,7 @@ io.on('connection', (socket) => {
     console.log(`User ${displayName} disconnected from chat`);
     
     // Notify others that user left
-    socket.to('general-chat').emit('userLeft', {
+    socket.to('chat').emit('userLeft', {
       displayName: displayName,
       message: `${displayName} left the chat`
     });

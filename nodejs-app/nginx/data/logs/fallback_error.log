@@ -90,3 +90,5 @@
 2025/12/10 15:23:03 [error] 217#217: *113 open() "/var/www/html/info.php" failed (2: No such file or directory), client: 64.226.65.160, server: localhost-nginx-proxy-manager, request: "GET /info.php HTTP/1.1", host: "bankofarmenia.net"
 2025/12/15 16:51:13 [error] 195#195: unexpected DNS response for backend-nodejs
 2025/12/15 16:51:13 [error] 195#195: unexpected DNS response for backend-nodejs
+2025/12/18 01:34:40 [error] 195#195: *15 open() "/var/www/html/.env" failed (2: No such file or directory), client: 185.209.196.187, server: localhost-nginx-proxy-manager, request: "GET /.env HTTP/1.1", host: "167.71.253.48"
+2025/12/18 01:34:41 [error] 195#195: *15 "/var/www/html/wp-content/index.html" is not found (2: No such file or directory), client: 185.209.196.187, server: localhost-nginx-proxy-manager, request: "GET /wp-content/ HTTP/1.1", host: "167.71.253.48"

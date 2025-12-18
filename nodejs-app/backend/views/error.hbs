@@ -1,12 +1,19 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Error</title>
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <h1>Error</h1>
-  <p id="message">An error occurred.</p>
-  <a href="/" id="back-link">← Back to Home</a>
+  {{> nav}}
+  
+  <main>
+    <h1>Error</h1>
+    <p>An error occurred.</p>
+    <p><a href="/">← Back to Home</a></p>
+  </main>
+  
+  {{> footer}}
 </body>
 </html>
