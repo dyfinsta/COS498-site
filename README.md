@@ -28,6 +28,7 @@ A forum application built with nodejs, express and socket io for COS 498 Server 
   - Profile veiwing and editing
  
 ## Database Schema
+```bash
 // User table 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -99,6 +100,8 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   )
 `);
+
+```
 
 ## Routes
 - Chat Routes
