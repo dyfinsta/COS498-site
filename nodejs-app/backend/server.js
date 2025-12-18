@@ -1,14 +1,18 @@
 // server.js
 const express = require('express');
 const session = require('express-session');
-const SQLiteStore = require('./sqlite-session-store'); // From Chapter 10
+const SQLiteStore = require('./sqlite-session-store');
 const path = require('path');
+const http = require('http');
+const { Server } = require('socket.io');
 const authRoutes = require('./routes/auth');
 const commentRoutes = require('./routes/comments');
+const chatRoutes = require('./routes/chat');
 const hbs = require('hbs');
 const { requireAuth } = require('./modules/auth-middleware');
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
 // Middleware
@@ -72,6 +76,91 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/', authRoutes);
 app.use('/', commentRoutes);
+app.use('/', chatRoutes);
+
+// Socket setup
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+// Share session
+io.engine.use(sessionMiddleware);
+
+// Socket connection handlr
+io.on('connection', (socket) => {
+  const session = socket.request.session;
+
+  //check auth
+  if (!session.isLoggedIn){
+    socket.emit('error', { message: 'Authentication required'});
+    socket.disconnect();
+    return;
+  }
+
+  const userId = session.userId;
+  const username = session.username;
+  const displayName = session.displayName;
+
+  console.log(`User ${displayName} (${username}) connected to chat`);
+
+  //join chat
+  socket.join('chat');
+
+  socket.to('chat').emit('userJoined', {
+    displayName: displayName,
+    message: `${displayName} joined chat`
+  });
+
+  //new messages
+  socket.on('sendMessage', async (data) => {
+    try {
+      const db = require('./database/database');
+
+      const stmt = db.prepare(`
+        INSERT INTO chat_messages (user_id, message)
+        VALUES (?, ?)
+      `);
+      
+      const result = stmt.run(userId, data.message);
+      
+      // Get user profile info for the message
+      const userStmt = db.prepare(`
+        SELECT display_name, profile_avatar_url FROM users WHERE id = ?
+      `);
+      const userInfo = userStmt.get(userId);
+      
+      // Broadcast message to all users in the chat room
+      const messageData = {
+        id: result.lastInsertRowid,
+        message: data.message,
+        displayName: userInfo.display_name,
+        profileAvatarUrl: userInfo.profile_avatar_url,
+        timestamp: new Date().toISOString(),
+        userId: userId
+      };
+      
+      // Send to all users in the chat room (including sender)
+      io.to('general-chat').emit('newMessage', messageData);
+      
+    } catch (error) {
+      console.error('Error saving chat message:', error);
+      socket.emit('error', { message: 'Failed to send message' });
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`User ${displayName} disconnected from chat`);
+    
+    // Notify others that user left
+    socket.to('general-chat').emit('userLeft', {
+      displayName: displayName,
+      message: `${displayName} left the chat`
+    });
+  });
+});
 
 // Protected route example (doing this manually by sending)
 app.get('/api/protected', requireAuth, (req, res) => {
@@ -81,11 +170,10 @@ app.get('/api/protected', requireAuth, (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-// Graceful shutdown, this will help the session to close the db gracefully since we're now using it.
 process.on('SIGINT', () => {
   console.log('\nShutting down gracefully...');
   sessionStore.close();
