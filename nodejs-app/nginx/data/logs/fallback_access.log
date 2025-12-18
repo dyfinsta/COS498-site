@@ -234,3 +234,4 @@
 [15/Dec/2025:16:26:18 +0000] 400 - - http localhost-nginx-proxy-manager "-" [Client 93.174.93.12] [Length 154] [Gzip -] "-" "-"
 [15/Dec/2025:16:53:01 +0000] 400 - - http localhost-nginx-proxy-manager "-" [Client 185.242.226.114] [Length 154] [Gzip -] "-" "-"
 [15/Dec/2025:17:02:21 +0000] 200 - GET http 167.71.253.48 "/" [Client 185.242.226.114] [Length 568] [Gzip 1.86] "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36" "-"
+[18/Dec/2025:00:43:20 +0000] 200 - GET http 167.71.253.48 "/" [Client 103.179.57.114] [Length 568] [Gzip 1.86] "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" "-"

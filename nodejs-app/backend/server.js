@@ -46,18 +46,18 @@ const sessionStore = new SQLiteStore({
   table: 'sessions'
 });
 
-app.use(
-  session({
+const sessionMiddleware = session({
     store: sessionStore,
     secret: process.env.SESSION_SECRET || 'change-this-secret-in-production',
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false, // Set to true if using HTTPS
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      secure: false,
+      maxAge: 24 * 60 * 60 * 1000
     }
-  })
-);
+});
+
+app.use(sessionMiddleware);
 
 app.use((req, res, next) => {
   res.locals.user = {
@@ -76,7 +76,7 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/', authRoutes);
 app.use('/', commentRoutes);
-app.use('/', chatRoutes);
+// app.use('/', chatRoutes);
 
 // Socket setup
 const io = new Server(server, {

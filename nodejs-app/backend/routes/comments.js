@@ -3,9 +3,18 @@ const router = express.Router();
 const db = require('../database/database.js');
 const { requireAuth } = require('../modules/auth-middleware');
 
-// Display all comments
+// Display all comments with pagination
 router.get('/comments', (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = 25;
+    const offset = (page - 1) * limit;
+
+    // Get total count for pagination
+    const countStmt = db.prepare('SELECT COUNT(*) as total FROM comments');
+    const { total } = countStmt.get();
+    
+    // Get comments for current page
     const stmt = db.prepare(`
       SELECT 
         c.id,
@@ -22,11 +31,28 @@ router.get('/comments', (req, res) => {
       FROM comments c
       INNER JOIN users u ON c.author_id = u.id
       ORDER BY c.created_at DESC
+      LIMIT ? OFFSET ?
     `);
     
-    const comments = stmt.all();
+    const comments = stmt.all(limit, offset);
     
-    res.render('comments', { comments: comments });
+    // Calculate pagination info
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+    
+    res.render('comments', { 
+      comments: comments,
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        hasNext: hasNext,
+        hasPrev: hasPrev,
+        nextPage: hasNext ? page + 1 : null,
+        prevPage: hasPrev ? page - 1 : null,
+        total: total
+      }
+    });
   } catch (error) {
     console.error('Error fetching comments:', error);
     res.render('error', { message: 'Error loading comments' });

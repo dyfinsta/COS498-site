@@ -15,6 +15,13 @@
       <p><a href="/login">Login</a> to post a comment.</p>
     {{/if}}
 
+    <!-- Pagination info -->
+    {{#if pagination}}
+      <div class="pagination-info">
+        <p>Showing {{comments.length}} of {{pagination.total}} comments (Page {{pagination.currentPage}} of {{pagination.totalPages}})</p>
+      </div>
+    {{/if}}
+
     {{#each comments}}
       <div class="comment">
         <div class="comment-header">
@@ -49,6 +56,21 @@
     {{else}}
       <p>No comments yet. Be the first!</p>
     {{/each}}
+
+    <!-- Pagination controls -->
+    {{#if pagination}}
+      <div class="pagination">
+        {{#if pagination.hasPrev}}
+          <a href="/comments?page={{pagination.prevPage}}" class="pagination-link">← Previous</a>
+        {{/if}}
+        
+        <span class="pagination-current">Page {{pagination.currentPage}} of {{pagination.totalPages}}</span>
+        
+        {{#if pagination.hasNext}}
+          <a href="/comments?page={{pagination.nextPage}}" class="pagination-link">Next →</a>
+        {{/if}}
+      </div>
+    {{/if}}
   </main>
   {{> footer}}
 </body>
